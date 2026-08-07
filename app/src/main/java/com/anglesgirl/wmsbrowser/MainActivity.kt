@@ -42,6 +42,7 @@ class MainActivity : AppCompatActivity() {
         "android.intent.action.SCAN",                    // 通用
         "com.scanner.broadcast",                         // 国产枪通用
         "action.com.android.scanner",                    // 部分国产
+        "android.intent.action.RECEIVE_SCANDATA_BROADCAST", // Newland (NLS-MT60/MT65/MT66, st6750 等)
     )
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -53,6 +54,8 @@ class MainActivity : AppCompatActivity() {
 
         // 常亮：扫码枪长时间扫
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        // 强制软键盘默认隐藏（扫码枪扫码不弹），仅手点输入框才显示
+        window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN)
 
         setupWebView()
         setContentView(webView)
@@ -149,6 +152,7 @@ class MainActivity : AppCompatActivity() {
     /** 从扫码广播 Intent 提取条码文本（不同厂商 key 不同，逐个尝试）。 */
     private fun extractBarcode(intent: Intent): String? {
         val keys = arrayOf(
+            "android.intent.extra.SCAN_BROADCAST_DATA", // Newland
             "SCAN_RESULT", "scan_result", "barcode", "Barcode", "data", "text",
             "decoded_data", "SCAN_BARCODE1", "BARCODE", "value", "scanData", "code"
         )
