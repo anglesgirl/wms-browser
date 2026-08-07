@@ -40,6 +40,9 @@ class MainActivity : AppCompatActivity() {
 
         setupWebView()
         setContentView(webView)
+        // 禁用软键盘自动唤起：扫码枪输入时软键盘不自动弹出，只有用户手点输入框才显示
+        // （API 23 WebView 需反射；API 26+ 原生支持）
+        disableSoftInputOnFocus()
         loadTarget()
     }
 
@@ -100,6 +103,23 @@ class MainActivity : AppCompatActivity() {
 
     private fun loadTarget() {
         webView.loadUrl(targetUrl)
+    }
+
+    /** 禁用聚焦输入框时自动唤起软键盘（只对扫码枪模拟键盘生效，用户手动触摸仍显示）。 */
+    private fun disableSoftInputOnFocus() {
+        try {
+            if (android.os.Build.VERSION.SDK_INT >= 26) {
+                webView.setShowSoftInputOnFocus(false)
+            } else {
+                // API 23-25：反射调用 View 的 @hide setShowSoftInputOnFocus
+                val m = android.view.View::class.java.getDeclaredMethod("setShowSoftInputOnFocus", Boolean::class.javaPrimitiveType)
+                m.invoke(webView, false)
+            }
+        } catch (e: Exception) {
+            // 反射失败则用窗口 flag 兜底：保持无软键盘状态
+            window.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN or
+                    android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN)
+        }
     }
 
     /** 聚焦页面当前可见输入框，扫码枪才能接收；并滚动到可见位置（小屏防被键盘挡）。 */
