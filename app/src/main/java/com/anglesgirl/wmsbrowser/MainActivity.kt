@@ -108,13 +108,9 @@ class MainActivity : AppCompatActivity() {
     /** 禁用聚焦输入框时自动唤起软键盘（只对扫码枪模拟键盘生效，用户手动触摸仍显示）。 */
     private fun disableSoftInputOnFocus() {
         try {
-            if (android.os.Build.VERSION.SDK_INT >= 26) {
-                webView.setShowSoftInputOnFocus(false)
-            } else {
-                // API 23-25：反射调用 View 的 @hide setShowSoftInputOnFocus
-                val m = android.view.View::class.java.getDeclaredMethod("setShowSoftInputOnFocus", Boolean::class.javaPrimitiveType)
-                m.invoke(webView, false)
-            }
+            // API 26+ 原生；API23-25 需反射 —— 统一用反射调 View 的 @hide setShowSoftInputOnFocus
+            val m = webView.javaClass.getMethod("setShowSoftInputOnFocus", Boolean::class.javaPrimitiveType)
+            m.invoke(webView, false)
         } catch (e: Exception) {
             // 反射失败则用窗口 flag 兜底：保持无软键盘状态
             window.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN or
