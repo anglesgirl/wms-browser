@@ -6,11 +6,9 @@
 
 ## 硬性约束
 - **minSdk 必须 23**（安卓 6.0）——扫码枪系统老，别擅自提高。
-- 内网访问，域名 wms.pantum.com 外部不可达（测试实际加载需扫码枪局域网）。
-- WMS 是 Infor 系统，网页版入口即 wms.pantum.com。
-- **usesCleartextTraffic=true**（内网常是 http）；WebView 信任自签证书。
-- 扫码枪扫描模式：默认"模拟键盘输入"（WebView 原生接收）；若某枪是广播模式需加
-  Intent 接收器（现状未加，等用户确认）。
+- 内网访问，域名 wms.pantum.com 外部不可达（测试实际加载需扫码枪局域网）。**https**。
+- **usesCleartextTraffic 不需要**（https）；WebView 信任自签证书（onReceivedSslError → proceed）。
+- 扫码枪三种模式：改协议 / 模拟键盘 / 广播。当前已实现**广播模式**（监听常见 action，条码 JS 填入输入框）+ 模拟键盘（聚焦输入框）。
 
 ## 架构
 - 纯 WebView（无 Compose/三方浏览器库），Kotlin + AppCompat。

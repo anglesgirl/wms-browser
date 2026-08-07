@@ -1,6 +1,10 @@
 package com.anglesgirl.wmsbrowser
 
 import android.annotation.SuppressLint
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.net.http.SslError
 import android.os.Bundle
 import android.view.KeyEvent
@@ -8,7 +12,6 @@ import android.view.View
 import android.view.WindowManager
 import android.webkit.SslErrorHandler
 import android.webkit.WebChromeClient
-import android.webkit.WebResourceResponse
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -28,6 +31,19 @@ class MainActivity : AppCompatActivity() {
     private lateinit var webView: WebView
     private val targetUrl = "https://wms.pantum.com"  // 内网地址（HTTPS）
 
+    /** 扫码枪广播接收器（广播模式）：收到条码 → JS 填入当前输入框。 */
+    private var scanReceiver: BroadcastReceiver? = null
+
+    /** 常见扫码枪广播 action（不同厂商/型号不同，均注册监听） */
+    private val scanActions = arrayOf(
+        "android.intent.action.SCANRESULT",
+        "nl.symbol.android.intent.action.SCANRESULT",   // Zebra
+        "com.honeywell.decode.intent.action.SCAN_DECODING_RESULT", // Honeywell
+        "android.intent.action.SCAN",                    // 通用
+        "com.scanner.broadcast",                         // 国产枪通用
+        "action.com.android.scanner",                    // 部分国产
+    )
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -43,6 +59,7 @@ class MainActivity : AppCompatActivity() {
         // 禁用软键盘自动唤起：扫码枪输入时软键盘不自动弹出，只有用户手点输入框才显示
         // （API 23 WebView 需反射；API 26+ 原生支持）
         disableSoftInputOnFocus()
+        registerScanReceiver()
         loadTarget()
     }
 
@@ -105,6 +122,74 @@ class MainActivity : AppCompatActivity() {
         webView.loadUrl(targetUrl)
     }
 
+    /** 注册扫码枪广播接收器。 */
+    private fun registerScanReceiver() {
+        try {
+            val filter = IntentFilter()
+            for (a in scanActions) filter.addAction(a)
+            scanReceiver = object : BroadcastReceiver() {
+                override fun onReceive(context: Context?, intent: Intent?) {
+                    if (intent == null) return
+                    val barcode = extractBarcode(intent) ?: return
+                    if (barcode.isNotEmpty()) injectBarcode(barcode)
+                }
+            }
+            registerReceiver(scanReceiver, filter)
+        } catch (e: Exception) {
+            // 注册失败（部分系统限制）忽略
+        }
+    }
+
+    override fun onDestroy() {
+        try { if (scanReceiver != null) unregisterReceiver(scanReceiver) } catch (e: Exception) {}
+        webView.destroy()
+        super.onDestroy()
+    }
+
+    /** 从扫码广播 Intent 提取条码文本（不同厂商 key 不同，逐个尝试）。 */
+    private fun extractBarcode(intent: Intent): String? {
+        val keys = arrayOf(
+            "SCAN_RESULT", "scan_result", "barcode", "Barcode", "data", "text",
+            "decoded_data", "SCAN_BARCODE1", "BARCODE", "value", "scanData", "code"
+        )
+        val ex = intent.extras ?: return null
+        for (k in keys) {
+            if (ex.containsKey(k)) {
+                val v = ex.getString(k)
+                if (!v.isNullOrBlank()) return v.trim()
+            }
+        }
+        return null
+    }
+
+    /** 把条码注入 WebView 当前输入框（无焦点则聚焦第一个可见输入框），触发 input/change 事件。 */
+    private fun injectBarcode(barcode: String) {
+        runOnUiThread {
+            val esc = barcode.replace("\\", "\\\\").replace("'", "\\'").replace("\n", "\\n")
+            webView.evaluateJavascript(
+                """
+                (function(){
+                  var el = document.activeElement;
+                  if (!el || (el.tagName !== 'INPUT' && el.tagName !== 'TEXTAREA')) {
+                    // 当前无输入框焦点 → 找第一个可见输入框
+                    var els = document.querySelectorAll('input,textarea');
+                    for (var i=0;i<els.length;i++){
+                      if (els[i].offsetParent !== null) { el = els[i]; break; }
+                    }
+                  }
+                  if (!el) return 'no-input';
+                  el.focus();
+                  el.value = '$esc';
+                  // 触发 input + change（WMS 前端框架监听这些事件提交）
+                  try { el.dispatchEvent(new Event('input', {bubbles:true})); } catch(e){}
+                  try { el.dispatchEvent(new Event('change', {bubbles:true})); } catch(e){}
+                  try { el.scrollIntoView({block:'center', inline:'nearest'}); } catch(e){}
+                  return 'ok';
+                })();
+                """.trimIndent(), null)
+        }
+    }
+
     /** 禁用聚焦输入框时自动唤起软键盘（只对扫码枪模拟键盘生效，用户手动触摸仍显示）。 */
     private fun disableSoftInputOnFocus() {
         try {
@@ -164,10 +249,5 @@ class MainActivity : AppCompatActivity() {
     override fun onPause() {
         webView.onPause()
         super.onPause()
-    }
-
-    override fun onDestroy() {
-        webView.destroy()
-        super.onDestroy()
     }
 }

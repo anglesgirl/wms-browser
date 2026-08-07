@@ -3,10 +3,12 @@
 公司扫码枪（安卓 6.0）专用浏览器，进入内网 Infor WMS 系统（wms.pantum.com）。
 
 ## 功能
-- 全屏 WebView 加载内网 WMS（http，usesCleartextTraffic 开启）
+- 全屏 WebView 加载内网 WMS（https://wms.pantum.com）
 - 内网自签名 https 证书信任
 - 屏幕常亮（连续扫码作业）
-- 页面加载完成自动聚焦输入框（扫码枪扫完直接进框）| 软键盘默认永不自动弹出（仅手点输入框才显示）
+- 页面加载完成自动聚焦输入框（扫码枪扫完直接进框）
+- 软键盘默认永不自动弹出（仅手点输入框才显示）
+- **广播模式**：监听扫码枪广播（Zebra/Honeywell/国产通用 action），条码自动填入当前输入框并触发 input/change 事件
 - 支持 alert/prompt（WMS 弹窗）
 - 硬件返回键 = WebView 后退
 
