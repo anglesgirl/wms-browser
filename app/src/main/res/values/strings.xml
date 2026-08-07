@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">WMS 浏览器</string>
+    <style name="Theme.WmsBrowser" parent="Theme.AppCompat.NoActionBar">
+        <item name="android:statusBarColor">#111827</item>
+        <item name="android:windowFullscreen">true</item>
+    </style>
+</resources>
