@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">WMS Browser</string>
+    <string name="hint_url">输入 RF 页面地址，如 http://192.168.1.50/svc_wm/mobile</string>
+    <string name="btn_load">加载</string>
+    <string name="btn_ime_on">开启输入法</string>
+    <string name="btn_ime_off">关闭输入法</string>
+    <string name="status_ready">输入地址 → 点「加载」</string>
+</resources>
