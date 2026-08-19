@@ -61,7 +61,8 @@ public class MainActivity extends AppCompatActivity {
 
         webView.setWebViewClient(new WebViewClient() {
             @Override
-            public void onReceivedSslError(android.webkit.SslErrorHandler handler,
+            public void onReceivedSslError(WebView view,
+                                           android.webkit.SslErrorHandler handler,
                                            android.net.http.SslError error) {
                 // 内网自签证书：信任
                 handler.proceed();
